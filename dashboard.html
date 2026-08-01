@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bharat Climate Twin Dashboard</title>
+  <style>
+    :root {
+      --bg: #040b16;
+      --panel: rgba(12, 22, 42, 0.92);
+      --panel-2: rgba(10, 21, 40, 0.98);
+      --text: #f3f8ff;
+      --muted: #8ca1c0;
+      --accent: #4ea3ff;
+      --danger: #ff6b6b;
+      --good: #65d19e;
+      --warning: #ffcc66;
+      --border: rgba(255,255,255,0.09);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Segoe UI, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(49, 112, 255, 0.22), transparent 30%),
+        radial-gradient(circle at top right, rgba(52, 211, 153, 0.14), transparent 22%),
+        linear-gradient(180deg, #020711 0%, #06101d 100%);
+      color: var(--text);
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, rgba(4, 13, 26, 0.98), rgba(6, 14, 28, 0.92));
+      border-right: 1px solid var(--border);
+      padding: 22px 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      margin-bottom: 26px;
+      padding: 8px 6px;
+    }
+
+    .brand .logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #31b2ff, #534cff);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-item {
+      padding: 12px 12px;
+      border-radius: 12px;
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 600;
+      transition: 0.2s ease;
+    }
+
+    .nav-item.active,
+    .nav-item:hover {
+      background: rgba(78, 163, 255, 0.18);
+      color: white;
+    }
+
+    .content {
+      padding: 20px 22px 24px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .topbar-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #44b4ff, #5669ff);
+      display: grid;
+      place-items: center;
+      color: white;
+      font-weight: 700;
+    }
+
+    .search {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--muted);
+      max-width: 520px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(14, 26, 48, 0.94), rgba(7, 18, 35, 0.98));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 14px 42px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255,255,255,0.03);
+      backdrop-filter: blur(6px);
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .metric-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .metric-trend {
+      margin-top: 6px;
+      color: var(--good);
+      font-size: 12px;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(300px, 0.9fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .map-card {
+      min-height: 580px;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at center, rgba(60, 175, 255, 0.16), rgba(0,0,0,0.18)),
+        linear-gradient(180deg, rgba(10, 24, 48, 0.7), rgba(5, 11, 23, 0.95));
+      border: 1px solid rgba(88, 147, 255, 0.2);
+      border-radius: 20px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+    }
+
+    .map-card::before {
+      content: "";
+      position: absolute;
+      inset: 20px;
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 18% 24%, rgba(56, 182, 94, 0.3), transparent 18%),
+        radial-gradient(circle at 52% 40%, rgba(255, 174, 67, 0.35), transparent 26%),
+        radial-gradient(circle at 78% 24%, rgba(255, 84, 84, 0.3), transparent 18%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.25));
+      opacity: 0.9;
+      pointer-events: none;
+    }
+
+    .map-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
+      opacity: 0.45;
+    }
+
+    .map-surface {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    .map-viewport {
+      position: absolute;
+      inset: 0;
+      transform: scale(1.04) translateY(10px);
+      transform-origin: center center;
+      transition: transform 150ms ease;
+      cursor: grab;
+    }
+
+    .map-viewport.dragging {
+      cursor: grabbing;
+    }
+
+    .map-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .map-svg .india-outline {
+      fill: url(#indiaGradient);
+      stroke: rgba(255,255,255,0.82);
+      stroke-width: 2.5;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 12px rgba(20, 160, 255, 0.3));
+    }
+
+    .map-svg .india-highlight {
+      fill: rgba(255,255,255,0.16);
+      stroke: rgba(255,255,255,0.38);
+      stroke-width: 1.2;
+    }
+
+    .map-markers {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .map-marker {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.18), 0 0 20px currentColor;
+      border: 2px solid rgba(255,255,255,0.92);
+      z-index: 4;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    .map-tooltip {
+      position: fixed;
+      left: 0;
+      top: 0;
+      transform: translate(-9999px, -9999px);
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(5, 14, 32, 0.94);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 120ms ease;
+      z-index: 20;
+    }
+
+    .map-marker.heat { color: #ff5d59; background: #ff5d59; }
+    .map-marker.flood { color: #4ea3ff; background: #4ea3ff; }
+    .map-marker.air { color: #ffd166; background: #ffd166; }
+    .map-marker.rain { color: #4cd8a0; background: #4cd8a0; }
+
+    .map-legend {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 5;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(7, 20, 42, 0.76);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .map-footer {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+      z-index: 3;
+    }
+
+    .panel-title {
+      font-weight: 700;
+      margin-bottom: 14px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+
+    .alerts-list,
+    .insights-list,
+    .bottom-cards {
+      display: grid;
+      gap: 10px;
+    }
+
+    .alert-item,
+    .insight-item {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .muted { color: var(--muted); }
+    .good { color: var(--good); }
+    .warn { color: var(--warning); }
+    .bad { color: var(--danger); }
+
+    .controls {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    input, select, textarea, button {
+      font: inherit;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.04);
+      color: white;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, #3b8cff, #6b5cff);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .result-box,
+    .copilot-response {
+      margin-top: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      color: #e9f2ff;
+      min-height: 70px;
+      white-space: normal;
+    }
+
+    .copilot-response .copilot-answer {
+      font-weight: 600;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .copilot-response .copilot-meta {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .copilot-response .copilot-list {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .status-line {
+      font-size: 12px;
+      color: var(--good);
+      margin-top: 6px;
+    }
+
+    .bottom-grid {
+      display: none;
+    }
+
+    @media (max-width: 1040px) {
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .stats-grid, .control-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">☁</div>
+        <div>
+          <div>Bharat Climate Twin</div>
+          <div class="muted" style="font-size:12px; font-weight:500;">AI-Powered Climate Digital Twin</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="nav-item active" href="#dashboard" data-target="dashboard">Dashboard</a>
+        <a class="nav-item" href="#map" data-target="map">Digital Twin Map</a>
+        <a class="nav-item" href="#copilot" data-target="copilot">Climate Copilot</a>
+        <a class="nav-item" href="#simulation" data-target="simulation">Simulation</a>
+        <a class="nav-item" href="#insights" data-target="insights">Insights</a>
+      </nav>
+    </aside>
+
+    <main class="content" id="dashboard">
+      <div class="topbar">
+        <div class="search">🔎 Search location, city, district…</div>
+        <div class="topbar-right">
+          <div class="chip">Live Telemetry</div>
+          <div class="topbar-avatar">A</div>
+          <div>Admin</div>
+        </div>
+      </div>
+
+      <section class="stats-grid">
+        <div class="card">
+          <div class="metric-label">Temperature</div>
+          <div class="metric-value" id="tempCard">32.6°C</div>
+          <div class="metric-trend">+2.1% vs yesterday</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">Rainfall</div>
+          <div class="metric-value" id="rainCard">48.7 mm</div>
+          <div class="metric-trend">+7.3% vs previous day</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">Humidity</div>
+          <div class="metric-value" id="humidityCard">68%</div>
+          <div class="metric-trend">Stable</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">Wind speed</div>
+          <div class="metric-value" id="windCard">18.6 km/h</div>
+          <div class="metric-trend">Low variation</div>
+        </div>
+        <div class="card">
+          <div class="metric-label">AQI</div>
+          <div class="metric-value" id="aqiCard">62</div>
+          <div class="metric-trend">Moderate</div>
+        </div>
+      </section>
+
+      <section class="main-grid" id="map">
+        <div class="card map-card">
+          <div class="map-overlay"></div>
+          <div class="map-surface" id="mapSurface">
+            <div class="map-viewport" id="mapViewport">
+              <svg id="indiaMapSvg" class="map-svg" viewBox="0 0 700 520" aria-hidden="true">
+                <defs>
+                  <linearGradient id="indiaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#5bf6ab" />
+                    <stop offset="35%" stop-color="#84db73" />
+                    <stop offset="65%" stop-color="#f0b241" />
+                    <stop offset="100%" stop-color="#f35d63" />
+                  </linearGradient>
+                </defs>
+                <g id="indiaMapGroup" transform="translate(70, 30)"></g>
+              </svg>
+              <div class="map-markers">
+                <div class="map-marker heat" data-label="Heat" style="left: 42%; top: 30%;"></div>
+                <div class="map-marker flood" data-label="Flood" style="left: 57%; top: 42%;"></div>
+                <div class="map-marker air" data-label="Air" style="left: 46%; top: 56%;"></div>
+                <div class="map-marker rain" data-label="Rainfall" style="left: 63%; top: 33%;"></div>
+              </div>
+            </div>
+          </div>
+          <div id="mapTooltip" class="map-tooltip"></div>
+          <div class="map-footer">
+            <div class="chip">Digital Twin Map</div>
+            <div class="chip">Live risk index: <span id="riskIndex">74</span></div>
+          </div>
+          <div class="map-legend" aria-label="Climate risk legend">
+            <div class="legend-item"><span class="legend-dot" style="background:#ff5d59"></span> Heat</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#4ea3ff"></span> Flood</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#ffd166"></span> Air</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#4cd8a0"></span> Rainfall</div>
+          </div>
+        </div>
+
+        <div class="card" style="display:grid; gap:16px; align-content:start;">
+          <div>
+            <div class="panel-title">AI Predictions</div>
+            <div class="alerts-list">
+              <div class="alert-item"><span class="warn">●</span> <span>Rainfall risk: High 72%</span></div>
+              <div class="alert-item"><span class="warn">●</span> <span>Heat vulnerability: Moderate 40%</span></div>
+              <div class="alert-item"><span class="bad">●</span> <span>Flood risk: Elevated in coastal belt</span></div>
+              <div class="alert-item"><span class="good">●</span> <span>Air quality stable in most districts</span></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="panel-title">Live Alerts & Warnings</div>
+            <div class="alerts-list">
+              <div class="alert-item"><span class="bad">⚠</span> <span>Heavy rainfall alert: Tamil Nadu coast</span></div>
+              <div class="alert-item"><span class="warn">⚠</span> <span>Heatwave awareness in central corridor</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+
+      <section class="main-grid" style="margin-top:18px;" id="insights">
+        <div class="card">
+          <div class="panel-title">Insights & Recommendations</div>
+          <div class="insights-list">
+            <div class="insight-item"><span class="good">✓</span><span>Flood resilience actions in coastal districts should be prioritized this week.</span></div>
+            <div class="insight-item"><span class="warn">↗</span><span>Heatwave conditions could intensify in central urban corridors.</span></div>
+            <div class="insight-item"><span class="good">⚡</span><span>Air quality remains manageable if urban mobility patterns are controlled.</span></div>
+          </div>
+        </div>
+
+        <div class="card" id="simulation">
+          <div class="panel-title">Simulation</div>
+          <form id="simulationForm" class="controls">
+            <div class="control-grid">
+              <label>Temperature delta<input type="number" step="0.1" name="temp_delta_celsius" value="2.5"></label>
+              <label>Rainfall change<input type="number" step="0.1" name="rainfall_percentage_change" value="20"></label>
+              <label>Sea level rise<input type="number" step="0.1" name="sea_level_rise_meters" value="0.4"></label>
+              <label>Region<select name="target_region"><option>NATIONAL</option><option>Tamil Nadu</option><option>Chennai</option></select></label>
+            </div>
+            <button type="submit">Run Scenario</button>
+          </form>
+          <div class="result-box" id="simulationResult">Simulation output will appear here.</div>
+          <div class="status-line" id="simulationStatus"></div>
+        </div>
+
+        <div class="card" id="copilot">
+          <div class="panel-title">Climate Copilot</div>
+          <form id="copilotForm" class="controls">
+            <label>Ask a climate question
+              <textarea id="copilotQuery" rows="4" placeholder="Ask about floods, heat, Chennai, Tamil Nadu...">Flood risk in Tamil Nadu</textarea>
+            </label>
+            <button type="submit">Ask Copilot</button>
+          </form>
+          <div class="copilot-response" id="copilotResponse">Your AI result will appear here.</div>
+          <div class="status-line" id="copilotStatus"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const navLinks = document.querySelectorAll('.nav-item[data-target]');
+
+    function activateNavTarget(targetId) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+
+      navLinks.forEach((item) => {
+        item.classList.toggle('active', item.getAttribute('data-target') === targetId);
+      });
+
+      target.scrollIntoView({ behavior: 'auto', block: 'start' });
+      window.scrollBy({ top: -8, left: 0 });
+
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', `#${targetId}`);
+      } else {
+        window.location.hash = targetId;
+      }
+    }
+
+    navLinks.forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const targetId = link.getAttribute('data-target');
+        activateNavTarget(targetId);
+      });
+
+      link.addEventListener('touchstart', (event) => {
+        event.preventDefault();
+        const targetId = link.getAttribute('data-target');
+        activateNavTarget(targetId);
+      }, { passive: false });
+    });
+
+    function getMetricTone(value, kind) {
+      if (value >= 75) return kind === 'rain' ? '#009e63' : '#ef4444';
+      if (value >= 50) return kind === 'rain' ? '#36c778' : '#f59e0b';
+      return kind === 'rain' ? '#22c55e' : '#3b82f6';
+    }
+
+    function setMarkerRisk(marker, value, kind) {
+      const tone = getMetricTone(value, kind);
+      marker.dataset.value = value;
+      marker.style.background = tone;
+      marker.style.color = tone;
+      marker.style.boxShadow = `0 0 0 3px rgba(255,255,255,0.18), 0 0 22px ${tone}`;
+      marker.style.borderColor = 'rgba(255,255,255,0.95)';
+    }
+
+    function syncMapRisk(payload) {
+      const heat = Number(payload.simulated_heatwave_index || 50);
+      const flood = Number(payload.simulated_flood_risk_score || 45);
+      const rainfallChange = Number(document.querySelector('input[name="rainfall_percentage_change"]').value || 0);
+      const air = Math.max(0, Math.min(100, Math.round((heat + (100 - flood) * 0.45) * 0.7)));
+      const rain = Math.max(0, Math.min(100, Math.round(35 + rainfallChange * 0.9)));
+
+      setMarkerRisk(document.querySelector('.map-marker.heat'), heat, 'heat');
+      setMarkerRisk(document.querySelector('.map-marker.flood'), flood, 'flood');
+      setMarkerRisk(document.querySelector('.map-marker.air'), air, 'air');
+      setMarkerRisk(document.querySelector('.map-marker.rain'), rain, 'rain');
+    }
+
+    const initialRiskPayload = {
+      simulated_heatwave_index: 50,
+      simulated_flood_risk_score: 45,
+    };
+
+    syncMapRisk(initialRiskPayload);
+
+    function buildCountryPathFromGeometry(geometry, svgWidth = 560, svgHeight = 460, pad = 24) {
+      const minLon = 68.1;
+      const maxLon = 97.4;
+      const minLat = 6.5;
+      const maxLat = 37.1;
+
+      const toPoint = ([lon, lat]) => {
+        const x = ((lon - minLon) / (maxLon - minLon)) * (svgWidth - pad * 2) + pad;
+        const y = ((maxLat - lat) / (maxLat - minLat)) * (svgHeight - pad * 2) + pad;
+        return `${x.toFixed(2)},${y.toFixed(2)}`;
+      };
+
+      const rings = geometry.type === 'Polygon'
+        ? geometry.coordinates
+        : geometry.coordinates.flatMap((polygon) => polygon);
+
+      const pathBuilder = [];
+      rings.forEach((ring) => {
+        const ringPath = ring.map(toPoint).join(' L ');
+        pathBuilder.push(`M ${ringPath} Z`);
+      });
+
+      return pathBuilder.join(' ');
+    }
+
+    function drawIndiaMap() {
+      const mapGroup = document.getElementById('indiaMapGroup');
+      if (!mapGroup) return;
+
+      fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+        .then((response) => response.json())
+        .then((geojson) => {
+          const india = geojson.features.find((feature) => {
+            const name = (feature.properties.name || feature.properties.NAME || feature.properties.ADMIN || '').toLowerCase();
+            return name === 'india';
+          });
+
+          if (!india) return;
+
+          const pathData = buildCountryPathFromGeometry(india.geometry);
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('class', 'india-outline');
+          path.setAttribute('d', pathData);
+          mapGroup.appendChild(path);
+        })
+        .catch(() => {
+          mapGroup.innerHTML = '<path class="india-outline" d="M140 80 C 180 48, 240 38, 288 48 C 324 56, 350 78, 372 104 C 385 118, 396 141, 396 164 C 398 194, 380 220, 372 245 C 364 275, 376 305, 387 328 C 397 350, 389 380, 364 396 C 342 409, 318 407, 297 396 C 283 388, 271 370, 250 360 C 231 351, 215 338, 193 333 C 176 329, 165 317, 149 310 C 133 303, 121 287, 116 268 C 108 241, 115 217, 122 195 C 130 171, 129 146, 120 123 C 110 97, 113 85, 140 80 Z" />';
+        });
+    }
+
+    drawIndiaMap();
+
+    const mapSurface = document.getElementById('mapSurface');
+    const mapViewport = document.getElementById('mapViewport');
+    const mapTooltip = document.getElementById('mapTooltip');
+    const markers = Array.from(document.querySelectorAll('.map-marker'));
+    let mapScale = 1.04;
+    let panX = 0;
+    let panY = 0;
+    let dragState = null;
+
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const updateViewportTransform = () => {
+      mapViewport.style.transform = `translate(${panX}px, ${panY}px) scale(${mapScale})`;
+    };
+
+    mapSurface.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      const delta = event.deltaY < 0 ? 0.1 : -0.1;
+      mapScale = clamp(mapScale + delta, 1, 1.9);
+      updateViewportTransform();
+    }, { passive: false });
+
+    mapSurface.addEventListener('pointerdown', (event) => {
+      if (event.target.closest('.map-marker')) return;
+      dragState = {
+        startX: event.clientX,
+        startY: event.clientY,
+        panX,
+        panY,
+      };
+      mapViewport.classList.add('dragging');
+    });
+
+    mapSurface.addEventListener('pointermove', (event) => {
+      if (!dragState) return;
+      panX = dragState.panX + (event.clientX - dragState.startX) * 0.4;
+      panY = dragState.panY + (event.clientY - dragState.startY) * 0.4;
+      updateViewportTransform();
+    });
+
+    const finishDrag = () => {
+      dragState = null;
+      mapViewport.classList.remove('dragging');
+    };
+
+    mapSurface.addEventListener('pointerup', finishDrag);
+    mapSurface.addEventListener('pointerleave', finishDrag);
+    mapSurface.addEventListener('dblclick', () => {
+      mapScale = 1.04;
+      panX = 0;
+      panY = 0;
+      updateViewportTransform();
+    });
+
+    markers.forEach((marker) => {
+      const label = marker.dataset.label || 'Metric';
+      marker.addEventListener('mouseenter', (event) => {
+        const value = Number(marker.dataset.value || 50);
+        mapTooltip.textContent = `${label}: ${value}%`;
+        mapTooltip.style.opacity = '1';
+        mapTooltip.style.transform = `translate(${event.clientX - 12}px, ${event.clientY - 12}px)`;
+      });
+      marker.addEventListener('mousemove', (event) => {
+        mapTooltip.style.transform = `translate(${event.clientX - 12}px, ${event.clientY - 12}px)`;
+      });
+      marker.addEventListener('mouseleave', () => {
+        mapTooltip.style.opacity = '0';
+      });
+    });
+
+    updateViewportTransform();
+
+    const ws = new WebSocket(`ws://${location.hostname}:8000/ws/live-telemetry`);
+    const tempCard = document.getElementById('tempCard');
+    const rainCard = document.getElementById('rainCard');
+    const humidityCard = document.getElementById('humidityCard');
+    const windCard = document.getElementById('windCard');
+    const aqiCard = document.getElementById('aqiCard');
+    const riskIndex = document.getElementById('riskIndex');
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      tempCard.textContent = `${data.avg_temp.toFixed(1)}°C`;
+      rainCard.textContent = `${data.rainfall_24h.toFixed(1)} mm`;
+      humidityCard.textContent = `${Math.max(0, Math.min(100, Math.round(data.avg_temp * 1.8)))}%`;
+      windCard.textContent = `${Math.round(16 + Math.random() * 5)} km/h`;
+      aqiCard.textContent = data.aqi;
+      riskIndex.textContent = Math.min(99, Math.max(45, Math.round(data.active_alerts * 18 + data.aqi / 2)));
+    };
+
+    ws.onerror = () => {
+      tempCard.textContent = '32.6°C';
+      rainCard.textContent = '48.7 mm';
+      humidityCard.textContent = '68%';
+      windCard.textContent = '18.6 km/h';
+      aqiCard.textContent = '62';
+      riskIndex.textContent = '74';
+    };
+
+    document.getElementById('simulationForm').addEventListener('input', () => {
+      const tempValue = Number(document.querySelector('input[name="temp_delta_celsius"]').value || 0);
+      const rainValue = Number(document.querySelector('input[name="rainfall_percentage_change"]').value || 0);
+      const floodValue = Math.max(0, Math.min(100, 45 + rainValue * 1.5 + 0.4 * 20));
+      const heatValue = Math.max(0, Math.min(100, 50 + tempValue * 12));
+      syncMapRisk({ simulated_heatwave_index: heatValue, simulated_flood_risk_score: floodValue });
+    });
+
+    document.getElementById('simulationForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const body = Object.fromEntries(formData.entries());
+      const status = document.getElementById('simulationStatus');
+      const box = document.getElementById('simulationResult');
+
+      status.textContent = 'Running scenario…';
+      box.textContent = 'Requesting simulation…';
+      try {
+        const response = await fetch('/api/v1/simulation/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await response.json();
+        box.textContent = JSON.stringify(data, null, 2);
+        status.textContent = 'Scenario completed successfully.';
+        syncMapRisk(data);
+      } catch (error) {
+        box.textContent = 'Simulation request failed.';
+        status.textContent = 'Request error.';
+      }
+    });
+
+    function renderCopilotResult(data) {
+      const box = document.getElementById('copilotResponse');
+      const districts = Array.isArray(data.high_risk_districts) && data.high_risk_districts.length
+        ? data.high_risk_districts.map((item) => `<li>${item}</li>`).join('')
+        : '<li>No district hotspots reported.</li>';
+
+      box.innerHTML = `
+        <div class="copilot-answer">${data.answer || 'No answer returned.'}</div>
+        <div class="copilot-meta">
+          <div><strong>Suggested action:</strong> ${data.suggested_action || 'No suggested action.'}</div>
+          <div><strong>High-risk districts:</strong>
+            <ul class="copilot-list">${districts}</ul>
+          </div>
+        </div>
+      `;
+    }
+
+    document.getElementById('copilotForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('copilotStatus');
+      const box = document.getElementById('copilotResponse');
+      const query = document.getElementById('copilotQuery').value;
+
+      status.textContent = 'Querying copilot…';
+      box.textContent = 'Requesting copilot response…';
+      try {
+        const response = await fetch('/api/v1/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, user_role: 'NDMA Admin' })
+        });
+        const data = await response.json();
+        renderCopilotResult(data);
+        status.textContent = 'Copilot response received.';
+      } catch (error) {
+        box.textContent = 'Copilot request failed.';
+        status.textContent = 'Request error.';
+      }
+    });
+
+    document.getElementById('simulationForm').querySelector('button[type="submit"]').addEventListener('click', () => {
+      document.getElementById('simulation').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    document.getElementById('copilotForm').querySelector('button[type="submit"]').addEventListener('click', () => {
+      document.getElementById('copilot').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  </script>
+</body>
+</html>
